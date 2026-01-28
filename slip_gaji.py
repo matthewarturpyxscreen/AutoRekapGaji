@@ -12,7 +12,6 @@ def generate_slip_gaji(data, output_path):
     styles = getSampleStyleSheet()
     title_style = styles["Heading1"]
     title_style.alignment = TA_CENTER
-
     text_style = styles["Normal"]
 
     y = height - 2 * cm
@@ -30,7 +29,7 @@ def generate_slip_gaji(data, output_path):
     # =========================
     items = [
         ("Nama", data["nama"]),
-        ("Bulan", data["bulan"]),
+        ("Periode", data["periode"]),
         ("Total Hadir", f'{data["total_hadir"]} hari'),
         ("Total Telat", f'{data["total_telat"]} hari'),
         ("Total Potongan", f'Rp {data["total_potongan"]:,}'),
