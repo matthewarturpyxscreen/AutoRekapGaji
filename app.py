@@ -48,7 +48,12 @@ if uploaded_file:
     # =========================
     st.subheader("📅 Rekap Bulanan per Karyawan")
     rekap = rekap_bulanan(df)
-    st.dataframe(rekap, use_container_width=True)
+
+    bulan_list = rekap["bulan"].unique()
+    bulan_terpilih = st.selectbox("Pilih Bulan", bulan_list)
+
+    rekap_filter = rekap[rekap["bulan"] == bulan_terpilih]
+
 
     # =========================
     # PILIH KARYAWAN
