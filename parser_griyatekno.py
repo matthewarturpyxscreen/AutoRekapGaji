@@ -1,60 +1,49 @@
 import pandas as pd
-from datetime import datetime, time
+import re
+from datetime import datetime
 
-def parse_griyatekno_log(uploaded_file):
-    df = pd.read_excel(uploaded_file, sheet_name="Log", header=None)
+def parse_griyatekno_log(file):
+    df = pd.read_excel(file, sheet_name="Log", header=None)
 
-    data = []
-    periode_awal = datetime(2025, 12, 21)  # SESUAI FILE CONTOH
+    results = []
+    current_user = None
+    current_dates = []
 
-    current_nama = None
-    current_hari = None
+    for i, row in df.iterrows():
+        row_str = " ".join([str(x) for x in row if pd.notna(x)])
 
-    for _, row in df.iterrows():
-        row_str = row.astype(str).tolist()
+        # DETEKSI HEADER USER
+        if "No :" in row_str and "Nama :" in row_str:
+            pin = re.search(r"No\s*:\s*(\d+)", row_str)
+            nama = re.search(r"Nama\s*:\s*(.+?)\s+Dept", row_str)
 
-        # detect nama
-        if "Nama :" in row_str:
-            idx = row_str.index("Nama :")
-            current_nama = row_str[idx + 1]
+            if pin and nama:
+                current_user = {
+                    "pin": pin.group(1),
+                    "nama": nama.group(1).strip()
+                }
 
-        # detect hari
-        for cell in row:
-            if isinstance(cell, (int, float)):
-                current_hari = int(cell)
+        # DETEKSI BARIS TANGGAL (21 22 23 ... 20)
+        elif all(isinstance(x, (int, float)) for x in row if pd.notna(x)):
+            current_dates = [int(x) for x in row if pd.notna(x)]
 
-        # detect jam
-        for cell in row:
-            if isinstance(cell, str) and ":" in cell:
-                jam = datetime.strptime(cell, "%H:%M").time()
+        # DETEKSI JAM ABSEN
+        elif current_user and current_dates:
+            col_idx = 0
+            for cell in row:
+                if pd.notna(cell) and isinstance(cell, str):
+                    times = cell.split("\n")
+                    masuk = times[0]
+                    pulang = times[1] if len(times) > 1 else None
 
-                # bangun tanggal
-                tahun = periode_awal.year
-                bulan = periode_awal.month
-                if current_hari < periode_awal.day:
-                    bulan += 1
-                    if bulan == 13:
-                        bulan = 1
-                        tahun += 1
+                    day = current_dates[col_idx]
+                    results.append({
+                        "pin": current_user["pin"],
+                        "nama": current_user["nama"],
+                        "tanggal": day,
+                        "jam_masuk": masuk,
+                        "jam_pulang": pulang
+                    })
+                col_idx += 1
 
-                tanggal = datetime(tahun, bulan, current_hari)
-
-                data.append({
-                    "nama": current_nama,
-                    "tanggal": tanggal,
-                    "jam": jam
-                })
-
-    df_log = pd.DataFrame(data)
-
-    # pisahkan jam masuk & pulang
-    df_log = (
-        df_log.groupby(["nama", "tanggal"])
-        .agg(
-            jam_masuk=("jam", "min"),
-            jam_pulang=("jam", "max")
-        )
-        .reset_index()
-    )
-
-    return df_log
+    return pd.DataFrame(results)
