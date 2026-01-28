@@ -1,5 +1,23 @@
 import pandas as pd
-from datetime import datetime
+import re
+from datetime import datetime, time
+
+def parse_jam(cell):
+    if not isinstance(cell, str):
+        return None
+
+    match = re.search(r"(\d{1,2}):(\d{2})", cell)
+    if not match:
+        return None
+
+    jam = int(match.group(1))
+    menit = int(match.group(2))
+
+    if 0 <= jam <= 23 and 0 <= menit <= 59:
+        return time(jam, menit)
+
+    return None
+
 
 def parse_griyatekno_log(uploaded_file):
     df = pd.read_excel(uploaded_file, sheet_name="Log", header=None)
@@ -24,29 +42,30 @@ def parse_griyatekno_log(uploaded_file):
                 if pd.notna(cell) and 1 <= int(cell) <= 31:
                     current_hari = int(cell)
 
-        # detect jam
+        # detect jam (SUPER KEBAL)
         for cell in row_list:
-            if isinstance(cell, str) and ":" in cell:
-                if current_nama is None or current_hari is None:
-                    continue
+            jam = parse_jam(cell)
+            if jam is None:
+                continue
 
-                jam = datetime.strptime(cell, "%H:%M").time()
+            if current_nama is None or current_hari is None:
+                continue
 
-                tahun = periode_awal.year
-                bulan = periode_awal.month
-                if current_hari < periode_awal.day:
-                    bulan += 1
-                    if bulan == 13:
-                        bulan = 1
-                        tahun += 1
+            tahun = periode_awal.year
+            bulan = periode_awal.month
+            if current_hari < periode_awal.day:
+                bulan += 1
+                if bulan == 13:
+                    bulan = 1
+                    tahun += 1
 
-                tanggal = datetime(tahun, bulan, current_hari)
+            tanggal = datetime(tahun, bulan, current_hari)
 
-                data.append({
-                    "nama": current_nama,
-                    "tanggal": tanggal,
-                    "jam": jam
-                })
+            data.append({
+                "nama": current_nama,
+                "tanggal": tanggal,
+                "jam": jam
+            })
 
     df_log = pd.DataFrame(data)
 
