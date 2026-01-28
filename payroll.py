@@ -1,26 +1,32 @@
-from datetime import time
+from datetime import datetime
+from shifts import get_shift
 
-JAM_MASUK = time(9, 0)
-BATAS_TELAT = time(9, 30)
-JAM_PULANG = time(17, 0)
-JAM_LEMBUR = time(18, 0)
+POTONGAN_TELAT = 50000
 
-POTONGAN_TELAT = 50_000
-LEMBUR_PER_JAM = 25_000
+def to_time(t):
+    return datetime.strptime(t, "%H:%M").time() if t else None
 
 def hitung_status(row):
-    jam_masuk = row["jam_masuk"]
-    jam_pulang = row["jam_pulang"]
+    shift = get_shift(row.get("shift", "SHIFT_PAGI"))
 
-    telat = jam_masuk > BATAS_TELAT
-    potongan = POTONGAN_TELAT if telat else 0
+    masuk = to_time(row["jam_masuk"])
+    pulang = to_time(row["jam_pulang"])
 
+    status = "HADIR"
+    potongan = 0
     lembur_jam = 0
-    lembur_rp = 0
-    if jam_pulang >= JAM_LEMBUR:
-        lembur_jam = jam_pulang.hour - 18
-        lembur_rp = lembur_jam * LEMBUR_PER_JAM
 
-    status = "TELAT" if telat else "HADIR"
-    return status, potongan, lembur_jam, lembur_rp
+    if not masuk:
+        return "ALFA", POTONGAN_TELAT, 0
 
+    if masuk > shift["batas_telat"]:
+        status = "TELAT"
+        potongan = POTONGAN_TELAT
+
+    if pulang and pulang >= shift["lembur_mulai"]:
+        lembur_jam = (
+            datetime.combine(datetime.today(), pulang) -
+            datetime.combine(datetime.today(), shift["lembur_mulai"])
+        ).seconds / 3600
+
+    return status, potongan, round(lembur_jam, 2)
