@@ -55,60 +55,50 @@ if uploaded_file:
     rekap_filter = rekap[rekap["bulan"] == bulan_terpilih]
 
 
-# =========================
-# PILIH KARYAWAN
-# =========================
-selected = st.selectbox(
-    "👤 Pilih Karyawan",
-    rekap["nama"].unique()
-)
+    # =========================
+    # PILIH KARYAWAN
+    # =========================
+    selected = st.selectbox(
+        "👤 Pilih Karyawan",
+        rekap["nama"].unique()
+    )
 
-# bulan tergantung karyawan
-bulan_opsi = rekap[rekap["nama"] == selected]["bulan"].unique()
-
-bulan = st.selectbox(
-    "🗓️ Bulan",
-    bulan_opsi
-)
-
-# =========================
-# GENERATE SLIP
-# =========================
-if st.button("🧾 Generate Slip Gaji"):
-
-    filtered = rekap[
-        (rekap["nama"] == selected) &
-        (rekap["bulan"] == bulan)
-    ]
-
-    if filtered.empty:
-        st.error("❌ Data slip gaji tidak ditemukan")
-        st.stop()
-
-    row = filtered.iloc[0]
-
-    slip_data = {
-        "nama": row["nama"],
-        "bulan": row["bulan"],
-        "total_hadir": row["total_hadir"],
-        "total_telat": row["total_telat"],
-        "total_potongan": row["total_potongan"],
-        "total_lembur_jam": row["total_lembur_jam"],
-    }
+    bulan = st.selectbox(
+        "🗓️ Bulan",
+        rekap["bulan"].unique()
+    )
 
     # =========================
-    # PDF
+    # GENERATE SLIP
     # =========================
-    tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    generate_slip_gaji(slip_data, tmp_pdf.name)
+    if st.button("🧾 Generate Slip Gaji"):
+        row = rekap[
+            (rekap["nama"] == selected) &
+            (rekap["bulan"] == bulan)
+        ].iloc[0]
 
-    with open(tmp_pdf.name, "rb") as f:
-        st.download_button(
-            "⬇️ Download Slip Gaji (PDF)",
-            data=f,
-            file_name=f"Slip_Gaji_{selected}_{bulan}.pdf",
-            mime="application/pdf"
-        )
+        slip_data = {
+            "nama": row["nama"],
+            "bulan": row["bulan"],
+            "total_hadir": row["total_hadir"],
+            "total_telat": row["total_telat"],
+            "total_potongan": row["total_potongan"],
+            "total_lembur_jam": row["total_lembur_jam"],
+        }
+
+        # =========================
+        # PDF
+        # =========================
+        tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        generate_slip_gaji(slip_data, tmp_pdf.name)
+
+        with open(tmp_pdf.name, "rb") as f:
+            st.download_button(
+                "⬇️ Download Slip Gaji (PDF)",
+                data=f,
+                file_name=f"Slip_Gaji_{selected}_{bulan}.pdf",
+                mime="application/pdf"
+            )
 
         # =========================
         # EXCEL (FIX ERROR)
