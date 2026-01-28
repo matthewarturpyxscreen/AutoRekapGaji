@@ -48,6 +48,7 @@ if uploaded_file:
     # =========================
     st.subheader("📅 Rekap Bulanan per Karyawan")
     rekap = rekap_periode(df)
+    st.write("Kolom rekap:", rekap.columns.tolist())
 
 
     bulan_list = rekap["bulan"].unique()
