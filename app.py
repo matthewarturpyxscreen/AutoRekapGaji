@@ -47,7 +47,7 @@ if uploaded_file:
     # REKAP BULANAN
     # =========================
     st.subheader("📅 Rekap Bulanan per Karyawan")
-   rekap = rekap_periode(df)
+    rekap = rekap_periode(df)
 
 
     bulan_list = rekap["bulan"].unique()
