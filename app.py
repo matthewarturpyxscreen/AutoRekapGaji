@@ -55,18 +55,21 @@ if uploaded_file:
     rekap_filter = rekap[rekap["bulan"] == bulan_terpilih]
 
 
-    # =========================
-    # PILIH KARYAWAN
-    # =========================
-    selected = st.selectbox(
-        "👤 Pilih Karyawan",
-        rekap["nama"].unique()
-    )
+# =========================
+# PILIH KARYAWAN
+# =========================
+selected = st.selectbox(
+    "👤 Pilih Karyawan",
+    rekap["nama"].unique()
+)
 
-    bulan = st.selectbox(
-        "🗓️ Bulan",
-        rekap["bulan"].unique()
-    )
+# filter bulan berdasarkan karyawan
+bulan_opsi = rekap[rekap["nama"] == selected]["bulan"].unique()
+
+bulan = st.selectbox(
+    "🗓️ Bulan",
+    bulan_opsi
+)
 
     # =========================
     # GENERATE SLIP
