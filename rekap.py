@@ -1,3 +1,5 @@
+import pandas as pd
+
 def rekap_bulanan(df):
     df = df.copy()
 
