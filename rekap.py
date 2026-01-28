@@ -1,14 +1,16 @@
-def rekap_periode(df):
+import pandas as pd
+
+def rekap_bulanan(df):
     df = df.copy()
 
-    df["periode"] = (
-        df["periode_awal"].dt.strftime("%d %B %Y") +
-        " – " +
-        df["periode_akhir"].dt.strftime("%d %B %Y")
-    )
+    # pastikan kolom tanggal ada
+    df["tanggal"] = pd.to_datetime(df["tanggal"])
+
+    # bikin kolom bulan
+    df["bulan"] = df["tanggal"].dt.strftime("%Y-%m")
 
     rekap = (
-        df.groupby(["nama", "periode"])
+        df.groupby(["nama", "bulan"])
         .agg(
             total_hadir=("status", lambda x: (x == "HADIR").sum()),
             total_telat=("status", lambda x: (x == "TELAT").sum()),
