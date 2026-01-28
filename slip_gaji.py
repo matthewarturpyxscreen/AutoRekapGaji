@@ -20,7 +20,7 @@ def generate_slip_gaji(data, output_path):
     # =========================
     # TITLE
     # =========================
-    title = Paragraph("SLIP GAJI KARYAWAN", title_style)
+    title = Paragraph("SLIP ABSENSI KARYAWAN", title_style)
     title.wrap(width, height)
     title.drawOn(c, 0, y)
     y -= 2 * cm
