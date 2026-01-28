@@ -6,7 +6,7 @@ from datetime import datetime
 
 from parser_griyatekno import parse_griyatekno_log
 from payroll import hitung_status
-from rekap import rekap_bulanan
+from rekap import rekap_periode
 from slip_gaji import generate_slip_gaji
 
 # =========================
@@ -47,7 +47,8 @@ if uploaded_file:
     # REKAP BULANAN
     # =========================
     st.subheader("📅 Rekap Bulanan per Karyawan")
-    rekap = rekap_bulanan(df)
+   rekap = rekap_periode(df)
+
 
     bulan_list = rekap["bulan"].unique()
     bulan_terpilih = st.selectbox("Pilih Bulan", bulan_list)
