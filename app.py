@@ -1,95 +1,110 @@
 import streamlit as st
 import pandas as pd
 import tempfile
-import os
+import io
+from datetime import datetime
 
 from parser_griyatekno import parse_griyatekno_log
 from payroll import hitung_status
 from rekap import rekap_bulanan
 from slip_gaji import generate_slip_gaji
 
+# =========================
+# CONFIG
+# =========================
 st.set_page_config("Sistem Absen & Gaji", layout="wide")
 st.title("📊 Sistem Absensi & Payroll")
 
 uploaded_file = st.file_uploader(
-    "Upload File Excel Fingerprint",
+    "📂 Upload File Excel Fingerprint",
     type=["xls", "xlsx"]
 )
 
 if uploaded_file:
-    # ===============================
-    # PARSE & HITUNG ABSENSI
-    # ===============================
+    # =========================
+    # PARSE & HITUNG
+    # =========================
     df = parse_griyatekno_log(uploaded_file)
 
     statuses = df.apply(hitung_status, axis=1, result_type="expand")
     df["status"], df["potongan"], df["lembur_jam"] = (
-        statuses[0], statuses[1], statuses[2]
+        statuses[0],
+        statuses[1],
+        statuses[2],
     )
 
-    # ===============================
-    # TAMPILKAN DATA HARIAN
-    # ===============================
-    st.subheader("📋 Data Absensi Harian")
+    # =========================
+    # TAMPILAN DATA
+    # =========================
+    st.subheader("📋 Data Absensi")
     st.dataframe(df, use_container_width=True)
 
-    st.subheader("📊 Ringkasan")
     col1, col2 = st.columns(2)
-    col1.metric(
-        "💰 Total Potongan",
-        f"Rp {df['potongan'].sum():,.0f}"
-    )
-    col2.metric(
-        "⏱️ Total Jam Lembur",
-        f"{df['lembur_jam'].sum()} jam"
-    )
+    col1.metric("💸 Total Potongan", f"Rp {df['potongan'].sum():,.0f}")
+    col2.metric("⏱️ Total Jam Lembur", f"{df['lembur_jam'].sum()} jam")
 
-    # ===============================
+    # =========================
     # REKAP BULANAN
-    # ===============================
+    # =========================
     st.subheader("📅 Rekap Bulanan per Karyawan")
     rekap = rekap_bulanan(df)
     st.dataframe(rekap, use_container_width=True)
 
-    # ===============================
-    # SLIP GAJI
-    # ===============================
-    st.subheader("🧾 Slip Gaji")
-
+    # =========================
+    # PILIH KARYAWAN
+    # =========================
     selected = st.selectbox(
-        "Pilih Karyawan",
-        rekap["nama"]
+        "👤 Pilih Karyawan",
+        rekap["nama"].unique()
     )
 
-    if st.button("Generate Slip Gaji"):
-        row = rekap[rekap["nama"] == selected].iloc[0]
+    bulan = st.selectbox(
+        "🗓️ Bulan",
+        rekap["bulan"].unique()
+    )
+
+    # =========================
+    # GENERATE SLIP
+    # =========================
+    if st.button("🧾 Generate Slip Gaji"):
+        row = rekap[
+            (rekap["nama"] == selected) &
+            (rekap["bulan"] == bulan)
+        ].iloc[0]
 
         slip_data = {
-            "Nama": row["nama"],
-            "Total Hadir": row["total_hadir"],
-            "Total Telat": row["total_telat"],
-            "Total Potongan": f"Rp {row['total_potongan']:,}",
-            "Total Lembur (Jam)": row["total_lembur_jam"]
+            "nama": row["nama"],
+            "bulan": row["bulan"],
+            "total_hadir": row["total_hadir"],
+            "total_telat": row["total_telat"],
+            "total_potongan": row["total_potongan"],
+            "total_lembur_jam": row["total_lembur_jam"],
         }
 
-        tmp = tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".pdf"
-        )
-        generate_slip_gaji(slip_data, tmp.name)
+        # =========================
+        # PDF
+        # =========================
+        tmp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        generate_slip_gaji(slip_data, tmp_pdf.name)
 
-        with open(tmp.name, "rb") as f:
+        with open(tmp_pdf.name, "rb") as f:
             st.download_button(
-                "⬇️ Download Slip Gaji PDF",
-                f,
-                file_name=f"slip_gaji_{selected}.pdf"
+                "⬇️ Download Slip Gaji (PDF)",
+                data=f,
+                file_name=f"Slip_Gaji_{selected}_{bulan}.pdf",
+                mime="application/pdf"
             )
 
-    # ===============================
-    # DOWNLOAD EXCEL
-    # ===============================
-    st.download_button(
-        "⬇️ Download Rekap Absensi (Excel)",
-        data=df.to_excel(index=False),
-        file_name="rekap_absensi.xlsx"
-    )
+        # =========================
+        # EXCEL (FIX ERROR)
+        # =========================
+        buffer = io.BytesIO()
+        df.to_excel(buffer, index=False)
+        buffer.seek(0)
+
+        st.download_button(
+            "⬇️ Download Rekap Absensi (Excel)",
+            data=buffer,
+            file_name=f"Rekap_Absensi_{bulan}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
