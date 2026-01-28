@@ -2,6 +2,29 @@ import pandas as pd
 import re
 from datetime import datetime
 
+def parse_periode(text):
+    """
+    Contoh:
+    Periode : 2025/12/21 ~ 01/20 ( PYXSCREEN )
+    """
+    m = re.search(r"(\d{4})/(\d{2})/(\d{2})\s*~\s*(\d{2})/(\d{2})", text)
+    if not m:
+        return None, None
+
+    start_year = int(m.group(1))
+    start_month = int(m.group(2))
+    start_day = int(m.group(3))
+
+    end_month = int(m.group(4))
+    end_day = int(m.group(5))
+
+    end_year = start_year + 1 if end_month < start_month else start_year
+
+    start_date = datetime(start_year, start_month, start_day)
+    end_date = datetime(end_year, end_month, end_day)
+
+    return start_date, end_date
+
 def parse_griyatekno_log(file):
     df = pd.read_excel(file, sheet_name="Log", header=None)
 
@@ -44,12 +67,14 @@ def parse_griyatekno_log(file):
 
                     day = current_dates[col_idx]
 
-                    # 🔥 HITUNG TANGGAL REAL
                     tanggal = start_date.replace(day=day)
                     if tanggal < start_date:
-                        tanggal = tanggal.replace(month=start_date.month + 1)
-                        if tanggal.month == 13:
-                            tanggal = tanggal.replace(month=1, year=tanggal.year + 1)
+                        month = start_date.month + 1
+                        year = start_date.year
+                        if month == 13:
+                            month = 1
+                            year += 1
+                        tanggal = tanggal.replace(month=month, year=year)
 
                     results.append({
                         "pin": current_user["pin"],
@@ -61,4 +86,3 @@ def parse_griyatekno_log(file):
                 col_idx += 1
 
     return pd.DataFrame(results)
-
