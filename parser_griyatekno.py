@@ -76,13 +76,15 @@ def parse_griyatekno_log(file):
                             year += 1
                         tanggal = tanggal.replace(month=month, year=year)
 
-                    results.append({
-                        "pin": current_user["pin"],
-                        "nama": current_user["nama"],
-                        "tanggal": tanggal,
-                        "jam_masuk": masuk,
-                        "jam_pulang": pulang
-                    })
+                        results.append({
+                            "pin": current_user["pin"],
+                            "nama": current_user["nama"],
+                            "tanggal": tanggal,
+                            "jam_masuk": masuk,
+                            "jam_pulang": pulang,
+                            "periode_awal": start_date,
+                            "periode_akhir": end_date
+                        })
                 col_idx += 1
 
     return pd.DataFrame(results)
